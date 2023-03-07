@@ -160,18 +160,14 @@ namespace GameProject2.StateManagement
         {
             List<int> rowsToClear = new List<int>();
             List<int> rowsTested = new List<int>();
-            foreach(Tuple<int,int> cord in _currentBlock.Cords)
+            for(int row = 4; row < 24; row++)
             {
-                if(rowsTested.IndexOf(cord.Item1) < 0)
-                {
                     bool full = true;
-                    rowsTested.Add(cord.Item1);
                     for (int i = 0; i < 10; i++)
-                    {//
-                        if (!_grid[cord.Item1, i]) full = false;
+                    {
+                        if (!_grid[row, i]) full = false;
                     }
-                    if(full) rowsToClear.Add(cord.Item1);
-                }
+                    if(full) rowsToClear.Add(row);
             }
             if (rowsToClear.Count > 0)
             {
