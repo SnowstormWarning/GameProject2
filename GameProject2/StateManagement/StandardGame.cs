@@ -167,7 +167,7 @@ namespace GameProject2.StateManagement
                     bool full = true;
                     rowsTested.Add(cord.Item1);
                     for (int i = 0; i < 10; i++)
-                    {
+                    {//
                         if (!_grid[cord.Item1, i]) full = false;
                     }
                     if(full) rowsToClear.Add(cord.Item1);
