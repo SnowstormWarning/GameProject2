@@ -49,6 +49,8 @@ namespace GameProject2.StateManagement
         private SoundEffect _blockDrop;
         private SoundEffect _lineClear;
         private Song _downfallMusic;
+        private bool _shaking;
+        private float _shakeTime;
         public int Score;
 
         public StandardGame(MainMenu mainMenu)
@@ -183,6 +185,10 @@ namespace GameProject2.StateManagement
                 }
                 Score+=rowsToClear.Count;
             }
+            foreach(int i in rowsToClear)
+            {
+                Game1.BlockClearParticleSystem.PlaceExplosion(_gameBoardStartPos + new Vector2(PosTool.RelativeVector(0.10f,0f).X,((float)(i)+0.5f) * _blockSpacing));
+            }
             return rowsToClear.Count;
         }
 
@@ -198,6 +204,7 @@ namespace GameProject2.StateManagement
         public void SettleBlock()
         {
             _blockDrop.Play();
+            _shaking = true;
             foreach (Tuple<int, int> cord in _currentBlock.Cords)
             {
                 _grid[cord.Item1, cord.Item2] = true;
@@ -206,6 +213,33 @@ namespace GameProject2.StateManagement
             {
                 //Noise Will Be Player Here
                 _lineClear.Play();
+            }
+            else
+            {
+                List<Vector2> placements = new List<Vector2>();
+                int highest = 99;
+                foreach (Tuple<int, int> cord in _currentBlock.Cords)
+                {
+                    if(placements.Count == 0)
+                    {
+                        placements.Add(_blockSprites[(int)cord.Item1, (int)cord.Item2].Position);
+                        highest = cord.Item1;
+                    }
+                    else if((int)cord.Item1 > highest)
+                    {
+                        highest = cord.Item1;
+                        placements.Clear();
+                        placements.Add(_blockSprites[(int)cord.Item1, (int)cord.Item2].Position);
+                    }
+                    else if((int)cord.Item1 == highest)
+                    {
+                        placements.Add(_blockSprites[(int)cord.Item1, (int)cord.Item2].Position);
+                    }
+                }
+                foreach(Vector2 v in placements)
+                {
+                    Game1.PlaceParticleSystem.PlaceExplosion(v+new Vector2(0.5f*_blockSpacing,_blockSpacing));
+                }
             }
             GetNextBlock();
         }
@@ -222,7 +256,16 @@ namespace GameProject2.StateManagement
 
         public override void Draw(GameTime gameTime, Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch, SpriteFont font)
         {
-            for(int i = 0; i < 240; i++)
+            spriteBatch.End();
+            Matrix shakeTransform = Matrix.Identity;
+            if (_shaking)
+            {
+                _shakeTime += (float)gameTime.ElapsedGameTime.TotalMilliseconds;
+                shakeTransform = Matrix.CreateTranslation(5 * MathF.Sin(_shakeTime), 5 * MathF.Cos(_shakeTime), 0);
+                if (_shakeTime > 500) _shaking = false;
+            }
+            spriteBatch.Begin(transformMatrix: shakeTransform);
+            for (int i = 0; i < 240; i++)
             {
                 if (_grid[i / 10, i % 10])
                 {
@@ -243,7 +286,7 @@ namespace GameProject2.StateManagement
             {
                 _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(gameTime, spriteBatch, Color.Blue);
             }
-            _miniSprites[(int)_nextBlock].Draw(gameTime, spriteBatch, Color.White);
+            _miniSprites[(int)_nextBlock].Draw(gameTime, spriteBatch, Color.LightGray);
             spriteBatch.DrawString(font, ""+Score, _scorePos, Color.White);
         }
 

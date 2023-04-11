@@ -13,6 +13,8 @@ namespace GameProject2
         private static SpriteFont _font;
         private StateManager _stateManager;
         public static Vector2 GlobalScalingFactor;
+        public static BlockClearParticleSystem BlockClearParticleSystem;
+        public static PlaceParticleSystem PlaceParticleSystem;
         public static SpriteFont Font => _font;
 
         public Game1()
@@ -28,6 +30,10 @@ namespace GameProject2
             Window.Title = "Downfall";
             _graphics.PreferredBackBufferWidth = GraphicsDevice.DisplayMode.Width;
             _graphics.PreferredBackBufferHeight = GraphicsDevice.DisplayMode.Height;
+            BlockClearParticleSystem = new BlockClearParticleSystem(this, 100);
+            Components.Add(BlockClearParticleSystem);
+            PlaceParticleSystem = new PlaceParticleSystem(this, 25);
+            Components.Add(PlaceParticleSystem);
             //_graphics.IsFullScreen = true; DOES NOT WORK IN DEBUG MODE
             _graphics.ApplyChanges();
             ChangeGlobalScaling();
