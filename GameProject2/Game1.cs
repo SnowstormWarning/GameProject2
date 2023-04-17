@@ -46,7 +46,7 @@ namespace GameProject2
 
         public void ChangeGlobalScaling()
         {
-            GlobalScalingFactor = new Vector2(((float)GraphicsDevice.DisplayMode.Width) / ((float)2560), ((float)GraphicsDevice.DisplayMode.Height) / ((float)1440));
+            GlobalScalingFactor = new Vector2(((float)_graphics.PreferredBackBufferWidth) / ((float)2560), ((float)_graphics.PreferredBackBufferHeight) / ((float)1440));
         }
 
         protected override void LoadContent()
