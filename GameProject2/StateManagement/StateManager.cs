@@ -15,6 +15,7 @@ namespace GameProject2.StateManagement
         public static GraphicsDevice GraphicsDevice;
         public static bool CloseGame;
         public State CurrentState;
+        public static Game1 game;
 
         public StateManager(GraphicsDevice graphicsDevice)
         {

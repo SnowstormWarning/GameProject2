@@ -18,6 +18,7 @@ using Microsoft.Xna.Framework.Audio;
 using System.Reflection.Metadata;
 using Microsoft.Xna.Framework.Media;
 using Basic3D;
+using GameProject2._3D;
 
 namespace GameProject2.StateManagement
 {
@@ -29,7 +30,7 @@ namespace GameProject2.StateManagement
         private Block _currentBlock;
         private BlockTypes _nextBlock;
         private Random _random;
-        private StaticSprite[,] _blockSprites = new StaticSprite[24,10];
+        private ModelBlock[,] _blockSprites = new ModelBlock[24,10];
         private StaticSprite[] _miniSprites = new StaticSprite[7];
         private Vector2 _gameBoardStartPos;
         private float _blockSpacing;
@@ -53,10 +54,32 @@ namespace GameProject2.StateManagement
         private bool _shaking;
         private float _shakeTime;
         public int Score;
+        private StaticCamera _camera;
 
         public StandardGame(MainMenu mainMenu)
         {
             this._mainMenu = mainMenu;
+        }
+
+        public short[] MakeIndices(Vector2 position)
+        {
+            short x = (short)position.X;
+            short y = (short)position.Y;
+            return new short[]
+                 {
+                 x, y, 2, // Side 0
+                 (short)(x+2), y, 3,
+                 (short)(x+4), (short)(y-1), 6, // Side 1
+                 (short)(x+6), (short)(y-1), 2,
+                 (short)(x+7), (short)(y+4), 6, // Side 2
+                 (short)(x+6), (short)(y+4), 4,
+                 (short)(x+3), y, 7, // Side 3 
+                 (short)(x+7), y, 5,
+                 (short)(x+4), (short)(y+4), 0, // Side 4 
+                 x, 5, 1,
+                 (short)(x+3), (short)(y+6), 2, // Side 5 
+                 (short)(x+2), (short)(y+6), 6
+                 };
         }
 
         public override void Initialize()
@@ -69,7 +92,8 @@ namespace GameProject2.StateManagement
             _blockSpacing = 2560 * _blockScale * Game1.GlobalScalingFactor.X;
             for(int i = 0; i < 240; i++)
             {
-                _blockSprites[i/10,i%10] = new StaticSprite("Block", _gameBoardStartPos + new Vector2(((float)(i%10)) * _blockSpacing, ((float)(i / 10)) * _blockSpacing), _blockScale);
+                //_blockSprites[i/10,i%10] = new StaticSprite("Block", _gameBoardStartPos + new Vector2(((float)(i%10)) * _blockSpacing, ((float)(i / 10)) * _blockSpacing), _blockScale);
+                _blockSprites[i / 10, i % 10] = new ModelBlock(StateManager.game, new Vector3(0,0,0));
                 Console.WriteLine("" + i / 10 + " , " + i % 10);
             }
             _miniSprites[(int)BlockTypes.L] = new StaticSprite("MiniL", _miniBlockPos, _miniBlockFactor);
@@ -88,10 +112,6 @@ namespace GameProject2.StateManagement
         }
         public override void LoadContent(ContentManager content)
         {
-            foreach (StaticSprite sprite in _blockSprites)
-            {
-                sprite.LoadContent(content);
-            }
             foreach(StaticSprite sprite in _miniSprites)
             {
                 sprite.LoadContent(content);
@@ -101,9 +121,11 @@ namespace GameProject2.StateManagement
             _downfallMusic = content.Load<Song>("DownfallMusic");
             MediaPlayer.IsRepeating = true;
             MediaPlayer.Play(_downfallMusic);
+            _camera = new StaticCamera(StateManager.game, new Vector3(0, -10, 0));
         }
         public override void Update(GameTime gameTime, MouseState mouse, KeyboardState keys)
         {
+            _camera.Update(gameTime);
             Tuple<int, int>[] startCords = _currentBlock.Cords;
             _timer += gameTime.ElapsedGameTime.Milliseconds;
             _inputBufferDown = UpdateBuffer(_inputBufferDown, gameTime);
@@ -112,6 +134,7 @@ namespace GameProject2.StateManagement
             _inputBufferRotateCW = UpdateBuffer(_inputBufferRotateCW, gameTime);
             _inputBufferRotateCCW = UpdateBuffer(_inputBufferRotateCCW, gameTime);
             _inputBufferSpace = UpdateBuffer(_inputBufferSpace, gameTime);
+
             if (_timer >= _timeStep)
             {
                 _timer -= _timeStep;
@@ -217,7 +240,7 @@ namespace GameProject2.StateManagement
             }
             else
             {
-                List<Vector2> placements = new List<Vector2>();
+                List<Vector3> placements = new List<Vector3>();
                 int highest = 99;
                 foreach (Tuple<int, int> cord in _currentBlock.Cords)
                 {
@@ -237,9 +260,9 @@ namespace GameProject2.StateManagement
                         placements.Add(_blockSprites[(int)cord.Item1, (int)cord.Item2].Position);
                     }
                 }
-                foreach(Vector2 v in placements)
+                foreach(Vector3 v in placements)
                 {
-                    Game1.PlaceParticleSystem.PlaceExplosion(v+new Vector2(0.5f*_blockSpacing,_blockSpacing));
+                    Game1.PlaceParticleSystem.PlaceExplosion(new Vector2(v.X,v.Y)+new Vector2(0.5f*_blockSpacing,_blockSpacing));
                 }
             }
             GetNextBlock();
@@ -270,22 +293,22 @@ namespace GameProject2.StateManagement
             {
                 if (_grid[i / 10, i % 10])
                 {
-                    _blockSprites[i / 10, i % 10].Draw(gameTime, spriteBatch);
+                    _blockSprites[i / 10, i % 10].Draw(_camera); //Draw(gameTime, spriteBatch);
                 } 
                 else if(i/10 > 3)
                 {
-                    _blockSprites[i / 10, i % 10].Draw(gameTime, spriteBatch, Color.DarkSlateGray);
+                    _blockSprites[i / 10, i % 10].Draw(_camera);//.Draw(gameTime, spriteBatch, Color.DarkSlateGray);
                 }
             }
             Block temp = new Block(_currentBlock);
             while (temp.MoveBlockDown(_grid));
             foreach (Tuple<int, int> cord in temp.Cords)
             {
-                _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(gameTime, spriteBatch, Color.SlateGray);
+                _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.SlateGray);
             }
             foreach (Tuple<int, int> cord in _currentBlock.Cords)
             {
-                _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(gameTime, spriteBatch, Color.Blue);
+                _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.Blue);
             }
             _miniSprites[(int)_nextBlock].Draw(gameTime, spriteBatch, Color.LightGray);
             spriteBatch.DrawString(font, ""+Score, _scorePos, Color.White);

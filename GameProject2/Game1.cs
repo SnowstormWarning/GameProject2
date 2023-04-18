@@ -38,6 +38,7 @@ namespace GameProject2
             _graphics.ApplyChanges();
             ChangeGlobalScaling();
             _stateManager = new StateManager(GraphicsDevice);
+            StateManager.game = this;
             Vector2 test = GlobalScalingFactor;
             _stateManager.AddUnloadedState(new MainMenu());
             _stateManager.CurrentState.Initialize();
