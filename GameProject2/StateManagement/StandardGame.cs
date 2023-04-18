@@ -90,10 +90,11 @@ namespace GameProject2.StateManagement
             _miniBlockPos = PosTool.RelativeVector(0.6f, 0.2f);
             _scorePos = PosTool.RelativeVector(0.6f, 0.1f);
             _blockSpacing = 2560 * _blockScale * Game1.GlobalScalingFactor.X;
+            _blockSpacing = 3;
             for(int i = 0; i < 240; i++)
             {
                 //_blockSprites[i/10,i%10] = new StaticSprite("Block", _gameBoardStartPos + new Vector2(((float)(i%10)) * _blockSpacing, ((float)(i / 10)) * _blockSpacing), _blockScale);
-                _blockSprites[i / 10, i % 10] = new ModelBlock(StateManager.game, new Vector3(0,0,0));
+                _blockSprites[i / 10, i % 10] = new ModelBlock(StateManager.game,new Vector3(40,40,0) - new Vector3(((float)(i % 10)) * _blockSpacing, ((float)(i / 10)) * _blockSpacing,0));
                 Console.WriteLine("" + i / 10 + " , " + i % 10);
             }
             _miniSprites[(int)BlockTypes.L] = new StaticSprite("MiniL", _miniBlockPos, _miniBlockFactor);
@@ -121,7 +122,7 @@ namespace GameProject2.StateManagement
             _downfallMusic = content.Load<Song>("DownfallMusic");
             MediaPlayer.IsRepeating = true;
             MediaPlayer.Play(_downfallMusic);
-            _camera = new StaticCamera(StateManager.game, new Vector3(0, -10, 0));
+            _camera = new StaticCamera(StateManager.game, new Vector3(0, -100, -100));
         }
         public override void Update(GameTime gameTime, MouseState mouse, KeyboardState keys)
         {
@@ -288,30 +289,32 @@ namespace GameProject2.StateManagement
                 shakeTransform = Matrix.CreateTranslation(5 * MathF.Sin(_shakeTime), 5 * MathF.Cos(_shakeTime), 0);
                 if (_shakeTime > 500) _shaking = false;
             }
-            spriteBatch.Begin(transformMatrix: shakeTransform);
+            //CAMERA DRAWING
             for (int i = 0; i < 240; i++)
             {
                 if (_grid[i / 10, i % 10])
                 {
                     _blockSprites[i / 10, i % 10].Draw(_camera); //Draw(gameTime, spriteBatch);
-                } 
-                else if(i/10 > 3)
+                }
+                else if (i / 10 > 3)
                 {
-                    _blockSprites[i / 10, i % 10].Draw(_camera);//.Draw(gameTime, spriteBatch, Color.DarkSlateGray);
+                    //_blockSprites[i / 10, i % 10].Draw(_camera);//.Draw(gameTime, spriteBatch, Color.DarkSlateGray);
                 }
             }
             Block temp = new Block(_currentBlock);
-            while (temp.MoveBlockDown(_grid));
+            while (temp.MoveBlockDown(_grid)) ;
             foreach (Tuple<int, int> cord in temp.Cords)
             {
-                _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.SlateGray);
+                //_blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.SlateGray);
             }
             foreach (Tuple<int, int> cord in _currentBlock.Cords)
             {
                 _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.Blue);
             }
+            spriteBatch.Begin(transformMatrix: shakeTransform);
             _miniSprites[(int)_nextBlock].Draw(gameTime, spriteBatch, Color.LightGray);
             spriteBatch.DrawString(font, ""+Score, _scorePos, Color.White);
+            //spriteBatch.End();
         }
 
         public override StateCommands GetStateCommand()
