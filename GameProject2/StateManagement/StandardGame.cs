@@ -19,6 +19,7 @@ using System.Reflection.Metadata;
 using Microsoft.Xna.Framework.Media;
 using Basic3D;
 using GameProject2._3D;
+using System.IO;
 
 namespace GameProject2.StateManagement
 {
@@ -36,11 +37,12 @@ namespace GameProject2.StateManagement
         private float _blockSpacing;
         private Vector2 _miniBlockPos;
         private Vector2 _scorePos;
+        private Vector2 _highScorePos;
         private float _miniBlockFactor = 6;
         private float _blockScale = 0.019f;
-        private int _timer;
-        private int _timeStep => 2000/_speed;
-        private int _speed = 1;
+        private float _timer;
+        private float _timeStep => 2000/_speed;
+        private float _speed = 1;
         private float _inputBufferDown;
         private float _inputBufferLeft;
         private float _inputBufferRight;
@@ -50,15 +52,24 @@ namespace GameProject2.StateManagement
         private float _inputBufferLength = 100f;
         private SoundEffect _blockDrop;
         private SoundEffect _lineClear;
-        private Song _downfallMusic;
+        private Song _beepBoop;
         private bool _shaking;
         private float _shakeTime;
         public int Score;
         private StaticCamera _camera;
+        private Vector3 _emptyColor = new Vector3(0.03f, 0.03f, 0.03f);
+        private Vector3 _settledColor = new Vector3(0.99f, 0.99f, 0.99f);
+        private Vector3 _activeColor = new Vector3(0.06f, 0.06f, 0.99f);
+        private Vector3 _shadowColor = new Vector3(0.06f, 0.06f, 0.06f);
+        private int _difficultyStep = 5;
+        private int _linesInThisDifficulty;
+        private int _highScore;
+        private string path;
 
         public StandardGame(MainMenu mainMenu)
         {
             this._mainMenu = mainMenu;
+            
         }
 
         public short[] MakeIndices(Vector2 position)
@@ -89,6 +100,7 @@ namespace GameProject2.StateManagement
             _gameBoardStartPos = PosTool.RelativeVector(0.3f, 0.15f);
             _miniBlockPos = PosTool.RelativeVector(0.6f, 0.2f);
             _scorePos = PosTool.RelativeVector(0.6f, 0.1f);
+            _highScorePos = PosTool.RelativeVector(0.6f, 0.12f);
             _blockSpacing = 2560 * _blockScale * Game1.GlobalScalingFactor.X;
             _blockSpacing = 3;
             for(int i = 0; i < 240; i++)
@@ -113,16 +125,27 @@ namespace GameProject2.StateManagement
         }
         public override void LoadContent(ContentManager content)
         {
-            foreach(StaticSprite sprite in _miniSprites)
+            path = content.RootDirectory + "/UserData.txt";
+            string data = File.ReadAllText(Path.Join(content.RootDirectory, "UserData.txt"));
+            var lines = data.Split('\n');
+            if(lines.Length > 0 && lines[0] != "")
+            {
+                    _highScore = int.Parse(lines[0]);
+            }
+            else
+            {
+                _highScore = 0;
+            }
+            foreach (StaticSprite sprite in _miniSprites)
             {
                 sprite.LoadContent(content);
             }
             _blockDrop = content.Load<SoundEffect>("BlockDrop");
             _lineClear = content.Load<SoundEffect>("LineClear");
-            _downfallMusic = content.Load<Song>("DownfallMusic");
+            _beepBoop = content.Load<Song>("beep_boop");
             MediaPlayer.IsRepeating = true;
-            MediaPlayer.Play(_downfallMusic);
-            _camera = new StaticCamera(StateManager.game, new Vector3(0, -100, -100));
+            MediaPlayer.Play(_beepBoop);
+            _camera = new StaticCamera(StateManager.game, new Vector3(0, -70, -70));
         }
         public override void Update(GameTime gameTime, MouseState mouse, KeyboardState keys)
         {
@@ -209,10 +232,24 @@ namespace GameProject2.StateManagement
                     }
                 }
                 Score+=rowsToClear.Count;
+                _highScore = Math.Max(Score, _highScore);
+                if(Score == _highScore)
+                {
+                    StreamWriter writer = new StreamWriter(path);
+                    writer.WriteLine(_highScore);
+                    writer.Close();
+                }
+                _linesInThisDifficulty += rowsToClear.Count;
+                if(_linesInThisDifficulty >= _difficultyStep)
+                {
+                    _linesInThisDifficulty -= _difficultyStep;
+                    _speed += 1f / _difficultyStep;
+                }
+
             }
             foreach(int i in rowsToClear)
             {
-                Game1.BlockClearParticleSystem.PlaceExplosion(_gameBoardStartPos + new Vector2(PosTool.RelativeVector(0.10f,0f).X,((float)(i)+0.5f) * _blockSpacing));
+                //Game1.BlockClearParticleSystem.PlaceExplosion(new Vector2(40, 40) - new Vector2(((float)(i % 10)) * _blockSpacing, ((float)(i / 10)) * _blockSpacing));
             }
             return rowsToClear.Count;
         }
@@ -294,27 +331,53 @@ namespace GameProject2.StateManagement
             {
                 if (_grid[i / 10, i % 10])
                 {
-                    _blockSprites[i / 10, i % 10].Draw(_camera); //Draw(gameTime, spriteBatch);
+                    _blockSprites[i / 10, i % 10].Color = BlockColors.Settled; //Draw(gameTime, spriteBatch);
                 }
                 else if (i / 10 > 3)
                 {
-                    //_blockSprites[i / 10, i % 10].Draw(_camera);//.Draw(gameTime, spriteBatch, Color.DarkSlateGray);
+                    _blockSprites[i / 10, i % 10].Color = BlockColors.Empty;//.Draw(gameTime, spriteBatch, Color.DarkSlateGray);
                 }
             }
             Block temp = new Block(_currentBlock);
             while (temp.MoveBlockDown(_grid)) ;
             foreach (Tuple<int, int> cord in temp.Cords)
             {
-                //_blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.SlateGray);
+                _blockSprites[(int)cord.Item1, (int)cord.Item2].Color = BlockColors.Shadow; //Draw(gameTime, spriteBatch, Color.SlateGray);
             }
             foreach (Tuple<int, int> cord in _currentBlock.Cords)
             {
-                _blockSprites[(int)cord.Item1, (int)cord.Item2].Draw(_camera); //Draw(gameTime, spriteBatch, Color.Blue);
+                _blockSprites[(int)cord.Item1, (int)cord.Item2].Color = BlockColors.Active; //Draw(gameTime, spriteBatch, Color.Blue);
             }
+            DrawBlocks();
             spriteBatch.Begin(transformMatrix: shakeTransform);
             _miniSprites[(int)_nextBlock].Draw(gameTime, spriteBatch, Color.LightGray);
-            spriteBatch.DrawString(font, ""+Score, _scorePos, Color.White);
+            spriteBatch.DrawString(font, "Score: "+Score, _scorePos, Color.White);
+            spriteBatch.DrawString(font, "High-Score: " + _highScore, _highScorePos, Color.White);
             //spriteBatch.End();
+        }
+
+        public void DrawBlocks()
+        {
+            for(int i = 0; i < _blockSprites.Length; i++)
+            {
+                if (i < 40) continue;
+                ModelBlock block = _blockSprites[i / 10, i % 10];
+                switch (block.Color)
+                {
+                    case BlockColors.Empty:
+                        block.Draw(_camera, _emptyColor);
+                        break;
+                    case BlockColors.Settled:
+                        block.Draw(_camera, _settledColor);
+                        break;
+                    case BlockColors.Active:
+                        block.Draw(_camera, _activeColor);
+                        break;
+                    case BlockColors.Shadow:
+                        block.Draw(_camera, _shadowColor);
+                        break;
+                }
+            }
         }
 
         public override StateCommands GetStateCommand()

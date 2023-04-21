@@ -62,6 +62,7 @@ namespace GameProject2.StateManagement
             _gameTitle.Draw(gameTime, spriteBatch);
             _start.Draw(gameTime, spriteBatch);
             _exit.Draw(gameTime, spriteBatch);
+            spriteBatch.DrawString(font, "With Music By: Noah Mikulin", PosTool.RelativeVector(0.45f, 0.28f), Color.White);
         }
 
         public override StateCommands GetStateCommand()

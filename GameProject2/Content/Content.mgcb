@@ -20,6 +20,12 @@
 /processorParam:TextureFormat=Compressed
 /build:arial.spritefont
 
+#begin beep_boop.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:beep_boop.mp3
+
 #begin Block.png
 /importer:TextureImporter
 /processor:TextureProcessor

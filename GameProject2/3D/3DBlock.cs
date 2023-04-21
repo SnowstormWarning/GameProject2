@@ -9,6 +9,13 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace GameProject2._3D
 {
+    public enum BlockColors
+    {
+        Empty,
+        Settled,
+        Active,
+        Shadow
+    }
     public class ModelBlock
     {
         // The cube's position in the world 
@@ -27,6 +34,8 @@ namespace GameProject2._3D
         /// </summary>
         public float Facing => facing;
 
+        public BlockColors Color;
+
         private Game game;
 
         Model model;
@@ -39,7 +48,7 @@ namespace GameProject2._3D
             this.position = position;
         }
 
-        public void Draw(ICamera camera)
+        public void Draw(ICamera camera, Vector3 color)
         {
             Matrix world = Matrix.CreateRotationY(facing) * Matrix.CreateTranslation(position);
 
@@ -47,7 +56,31 @@ namespace GameProject2._3D
 
             Matrix projection = camera.Projection;
 
-            model.Draw(world, view, projection);
+            foreach (ModelMesh mesh in model.Meshes)
+
+            {
+
+                foreach (Effect effect in mesh.Effects)
+
+                {
+
+                    if (effect is BasicEffect basic)
+
+                    {
+                        basic.EnableDefaultLighting();
+                        basic.World = world;
+                        basic.View = view;
+                        basic.Projection = projection;
+                        basic.DiffuseColor = color;
+
+                    }
+
+                }
+
+                mesh.Draw();
+
+            }
+            //model.Draw(world, view, projection);
         }
     }
 }
